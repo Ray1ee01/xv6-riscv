@@ -2,6 +2,8 @@
         # and causes each CPU to jump there.
         # kernel.ld causes the following code to
         # be placed at 0x80000000.
+
+
 .section .text
 .global _entry
 _entry:

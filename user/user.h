@@ -23,6 +23,14 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int ntas();
+int crash(const char*, int);
+int mount(char*, char *);
+int umount(char*);
+int show_window(char*);
+int close_window();
+int reg_keycb(void (*keycb)(uint64, uint64));
+int cb_return();
 
 // ulib.c
 int stat(const char*, struct stat*);
@@ -38,5 +46,3 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
-int memcmp(const void *, const void *, uint);
-void *memcpy(void *, const void *, uint);

@@ -21,7 +21,7 @@ struct context {
 // Per-CPU state.
 struct cpu {
   struct proc *proc;          // The process running on this cpu, or null.
-  struct context context;     // swtch() here to enter scheduler().
+  struct context scheduler;   // swtch() here to enter scheduler().
   int noff;                   // Depth of push_off() nesting.
   int intena;                 // Were interrupts enabled before push_off()?
 };
@@ -80,7 +80,43 @@ struct trapframe {
   /* 280 */ uint64 t6;
 };
 
-enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+struct cbhandler {
+  /*   0 */ uint64 ra;
+  /*   8 */ uint64 sp;
+  /*  16 */ uint64 gp;
+  /*  24 */ uint64 tp;
+  /*  32 */ uint64 t0;
+  /*  40 */ uint64 t1;
+  /*  48 */ uint64 t2;
+  /*  56 */ uint64 s0;
+  /*  64 */ uint64 s1;
+  /*  72 */ uint64 a0;
+  /*  80 */ uint64 a1;
+  /*  88 */ uint64 a2;
+  /*  96 */ uint64 a3;
+  /* 104 */ uint64 a4;
+  /* 112 */ uint64 a5;
+  /* 120 */ uint64 a6;
+  /* 128 */ uint64 a7;
+  /* 136 */ uint64 s2;
+  /* 144 */ uint64 s3;
+  /* 152 */ uint64 s4;
+  /* 160 */ uint64 s5;
+  /* 168 */ uint64 s6;
+  /* 176 */ uint64 s7;
+  /* 184 */ uint64 s8;
+  /* 192 */ uint64 s9;
+  /* 200 */ uint64 s10;
+  /* 208 */ uint64 s11;
+  /* 216 */ uint64 t3;
+  /* 224 */ uint64 t4;
+  /* 232 */ uint64 t5;
+  /* 240 */ uint64 t6;
+  /* 288 */ uint64 entered;
+  /* 296 */ uint64 epc;
+};
+
+enum procstate { UNUSED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
 struct proc {
@@ -88,21 +124,21 @@ struct proc {
 
   // p->lock must be held when using these:
   enum procstate state;        // Process state
+  struct proc *parent;         // Parent process
   void *chan;                  // If non-zero, sleeping on chan
   int killed;                  // If non-zero, have been killed
   int xstate;                  // Exit status to be returned to parent's wait
   int pid;                     // Process ID
 
-  // wait_lock must be held when using this:
-  struct proc *parent;         // Parent process
-
   // these are private to the process, so p->lock need not be held.
-  uint64 kstack;               // Virtual address of kernel stack
+  uint64 kstack;               // Bottom of kernel stack for this process
   uint64 sz;                   // Size of process memory (bytes)
-  pagetable_t pagetable;       // User page table
-  struct trapframe *trapframe; // data page for trampoline.S
+  pagetable_t pagetable;       // Page table
+  struct trapframe *tf;        // data page for trampoline.S
   struct context context;      // swtch() here to run process
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+
+  struct cbhandler cb;
 };

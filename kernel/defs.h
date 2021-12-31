@@ -52,7 +52,6 @@ struct inode*   nameiparent(char*, char*);
 int             readi(struct inode*, int, uint64, uint, uint);
 void            stati(struct inode*, struct stat*);
 int             writei(struct inode*, int, uint64, uint, uint);
-void            itrunc(struct inode*);
 
 // ramdisk.c
 void            ramdiskinit(void);
@@ -62,13 +61,17 @@ void            ramdiskrw(struct buf*);
 // kalloc.c
 void*           kalloc(void);
 void            kfree(void *);
-void            kinit(void);
+void            kinit();
 
 // log.c
 void            initlog(int, struct superblock*);
 void            log_write(struct buf*);
-void            begin_op(void);
-void            end_op(void);
+void            begin_op(int);
+void            end_op(int);
+void            crash_op(int,int);
+
+// pci.c
+void            pci_init();
 
 // pipe.c
 int             pipealloc(struct file**, struct file**);
@@ -86,7 +89,6 @@ int             cpuid(void);
 void            exit(int);
 int             fork(void);
 int             growproc(int);
-void            proc_mapstacks(pagetable_t);
 pagetable_t     proc_pagetable(struct proc *);
 void            proc_freepagetable(pagetable_t, uint64);
 int             kill(int);
@@ -96,6 +98,7 @@ struct proc*    myproc();
 void            procinit(void);
 void            scheduler(void) __attribute__((noreturn));
 void            sched(void);
+void            setproc(struct proc*);
 void            sleep(void*, struct spinlock*);
 void            userinit(void);
 int             wait(uint64);
@@ -115,6 +118,7 @@ void            initlock(struct spinlock*, char*);
 void            release(struct spinlock*);
 void            push_off(void);
 void            pop_off(void);
+uint64          sys_ntas(void);
 
 // sleeplock.c
 void            acquiresleep(struct sleeplock*);
@@ -150,13 +154,13 @@ void            usertrapret(void);
 void            uartinit(void);
 void            uartintr(void);
 void            uartputc(int);
-void            uartputc_sync(int);
 int             uartgetc(void);
 
 // vm.c
 void            kvminit(void);
 void            kvminithart(void);
-void            kvmmap(pagetable_t, uint64, uint64, uint64, int);
+uint64          kvmpa(uint64);
+void            kvmmap(uint64, uint64, uint64, int);
 int             mappages(pagetable_t, uint64, uint64, uint64, int);
 pagetable_t     uvmcreate(void);
 void            uvminit(pagetable_t, uchar *, uint);
@@ -174,13 +178,44 @@ int             copyinstr(pagetable_t, char *, uint64, uint64);
 // plic.c
 void            plicinit(void);
 void            plicinithart(void);
+uint64          plic_pending(void);
 int             plic_claim(void);
 void            plic_complete(int);
 
+// vga.c
+void            vga_init();
+void            show_window_text(char *, int, int);
+uint64          window_intr(int);
+uint64          sys_show_window();
+uint64          sys_close_window();
+uint64          sys_reg_keycb();
+uint64          sys_cb_return();
+
 // virtio_disk.c
-void            virtio_disk_init(void);
-void            virtio_disk_rw(struct buf *, int);
-void            virtio_disk_intr(void);
+void            virtio_disk_init(int);
+void            virtio_disk_rw(int, struct buf *, int);
+void            virtio_disk_intr(int);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+// Extra files for allocator lab
+
+
+// buddy.c
+void           bd_init(void*,void*);
+void           bd_free(void*);
+void           *bd_malloc(uint64);
+
+struct list {
+  struct list *next;
+  struct list *prev;
+};
+
+// list.c
+void lst_init(struct list*);
+void lst_remove(struct list*);
+void lst_push(struct list*, void *);
+void *lst_pop(struct list*);
+void lst_print(struct list*);
+int lst_empty(struct list*);
